@@ -3,14 +3,29 @@
 return [
 
     /**
+     * Application Name.
+     */
+    'application_name' => 'youtube',
+
+    /**
      * Client ID.
      */
-    'client_id' => env('GOOGLE_CLIENT_ID', null),
+    'client_id' => env('YOUTUBE_KEY', null),
 
     /**
      * Client Secret.
      */
-    'client_secret' => env('GOOGLE_CLIENT_SECRET', null),
+    'client_secret' => env('YOUTUBE_SECRET', null),
+
+    /**
+     * Access Type
+     */
+    'access_type' => 'offline',
+
+    /**
+     * Approval Prompt
+     */
+    'approval_prompt' => 'force',
 
     /**
      * Scopes.
@@ -22,35 +37,29 @@ return [
     ],
 
     /**
+     * Developer key.
+     */
+    'developer_key' => env('GOOGLE_DEVELOPER_KEY', null),
+
+    /**
      * Route URI's
      */
     'routes' => [
 
-        /** 
-         * Determine if the Routes should be disabled.
-         * Note: We recommend this to be set to "false" immediately after authentication.
-         */
-        'enabled' => false,
-
         /**
          * The prefix for the below URI's
          */
-        'prefix' => 'youtube',
+        'prefix' => '',
 
         /**
          * Redirect URI
          */
-        'redirect_uri' => 'callback',
+        'redirect_uri' => env('YOUTUBE_REDIRECT_URI', null),
 
         /**
          * The autentication URI
          */
         'authentication_uri' => 'auth',
-
-        /**
-         * The redirect back URI
-         */
-        'redirect_back_uri' => '/',
 
     ]
 
