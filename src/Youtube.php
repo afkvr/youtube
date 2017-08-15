@@ -314,20 +314,9 @@ class Youtube implements YoutubeContract
                 if(isset($broadcastsResponse->items[0]['id'])) {
                     $video_id = $broadcastsResponse->items[0]['id'];
 
-                    $params  = [
-                        'id'   => $video_id,
-                        'part' => implode(', ', $part),
-                    ];
-
-                    if($optionalParams) {
-                        $params = array_merge($params, $optionalParams);
-                    }
-
-                    $response = $this->youtube->videos->listVideos($part, $params);
-
-                    return $response->items[0]['liveStreamingDetails']['concurrentViewers'];
+                    return @file_get_contents('https://www.youtube.com/live_stats?v='.$video_id);
                 } else {
-                    return 1;
+                    return 0;
                 }
             } catch(Google_Service_Exception $e) {
                 echo sprintf('<p>A service error occurred: <code>%s</code></p>', htmlspecialchars($e->getMessage()));
