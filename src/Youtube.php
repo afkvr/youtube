@@ -37,6 +37,8 @@ class Youtube implements YoutubeContract
         $this->client->setApprovalPrompt(config('youtube.approval_prompt'));
         $this->client->setClassConfig('Google_Http_Request', 'disable_gzip', true);
         $this->client->setRedirectUri(config('youtube.routes.redirect_uri'));
+
+        $this->youtube = new \Google_Service_YouTube($this->client);
     }
 
     public function saveAccessTokenToDB($accessToken) {
@@ -265,8 +267,6 @@ class Youtube implements YoutubeContract
         $socialUpdate = $this->handleAccessToken($social);
 
         if($socialUpdate != null) {
-            $API_URL = 'https://www.googleapis.com/youtube/v3/channels';
-
             $params  = [
                 'id'   => is_array($social->channel_id) ? implode(',', $social->channel_id) : $social->channel_id,
                 'part' => implode(', ', $part),
@@ -276,7 +276,7 @@ class Youtube implements YoutubeContract
                 $params = array_merge($params, $optionalParams);
             }
 
-            $apiData = $this->api_get($API_URL, $params);
+            $apiData = $this->api_get($params);
 
             //echo "<pre>"; print_r($apiData);
 
@@ -288,48 +288,146 @@ class Youtube implements YoutubeContract
         }
     }
 
-    // Function to get all live messages and reply according to received messages
-    public function getLiveChatMessages() {
-        try {
-            $this->handleAccessToken();
+    public function getChannelBroadcastStatus($social) {
+        $socialUpdate = $this->handleAccessToken($social);
 
-            $broadcastsResponse = $this->youtube->liveBroadcasts->listLiveBroadcasts('id,snippet,contentDetails,status', array('mine' => 'true', 'broadcastType' => 'all'));
+        if($socialUpdate != null) {
+            $broadcastsResponse = $this->youtube->liveBroadcasts->listLiveBroadcasts('id,snippet,contentDetails,status', array('broadcastStatus' => 'active', 'broadcastType' => 'all'));
 
             //echo "<pre>"; print_r($broadcastsResponse);
 
-            $liveChatId = $broadcastsResponse['items'][0]['snippet']['liveChatId'];
+            if(empty($broadcastsResponse->items))
+                return false;
+            else
+                return true;
 
-            $liveChatMessages = $this->youtube->liveChatMessages->listLiveChatMessages($liveChatId, 'id,snippet,authorDetails');
-
-            //echo "<pre>"; print_r($liveChatMessages);
-
-            $liveChatMessagesDetailsObj = new \Google_Service_YouTube_LiveChatTextMessageDetails();
-            $liveChatMessagesObj = new \Google_Service_YouTube_LiveChatMessage();
-
-            $snippet = new \Google_Service_YouTube_LiveChatMessageSnippet();
-            $snippet->setLiveChatId($liveChatId);
-            $snippet->setType('textMessageEvent');
-
-            $liveChatMessagesDetailsObj->setMessageText("Next test message");
-            $snippet->setTextMessageDetails($liveChatMessagesDetailsObj);
-
-            $liveChatMessagesObj->setSnippet($snippet);
-
-            foreach($liveChatMessages->items as $message) {
-                $message = $message['snippet']['textMessageDetails']['messageText'];
-
-                if($message == 'hello') {
-                    $insert_message = $this->youtube->liveChatMessages->insert('snippet',$liveChatMessagesObj);
-
-                    echo "<pre>"; print_r($insert_message);
-                }
-            }
-        } catch(Google_Service_Exception $e) {
-            echo sprintf('<p>A service error occurred: <code>%s</code></p>', htmlspecialchars($e->getMessage()));
-        } catch(Google_Exception $e) {
-            echo sprintf('<p>An client error occurred: <code>%s</code></p>', htmlspecialchars($e->getMessage()));
         }
     }
+
+    public function getChannelCurrentViewersList($social, $optionalParams = false, $part = ['id', 'snippet', 'contentDetails', 'statistics', 'liveStreamingDetails', 'viewCount']) {
+        $socialUpdate = $this->handleAccessToken($social);
+
+        if($socialUpdate != null) {
+            try {
+                $broadcastsResponse = $this->youtube->liveBroadcasts->listLiveBroadcasts('id,snippet,contentDetails,status', array('broadcastStatus' => 'active', 'broadcastType' => 'all'));
+
+                if(isset($broadcastsResponse->items[0]['id'])) {
+                    $video_id = $broadcastsResponse->items[0]['id'];
+
+                    $params  = [
+                        'id'   => $video_id,
+                        'part' => implode(', ', $part),
+                    ];
+
+                    if($optionalParams) {
+                        $params = array_merge($params, $optionalParams);
+                    }
+
+                    $response = $this->youtube->videos->listVideos($part, $params);
+
+                    return $response->items[0]['liveStreamingDetails']['concurrentViewers'];
+                } else {
+                    return 1;
+                }
+            } catch(Google_Service_Exception $e) {
+                echo sprintf('<p>A service error occurred: <code>%s</code></p>', htmlspecialchars($e->getMessage()));
+            } catch(Google_Exception $e) {
+                echo sprintf('<p>An client error occurred: <code>%s</code></p>', htmlspecialchars($e->getMessage()));
+            }
+        }
+    }
+
+    public function getChannelTotalViewers($social, $optionalParams = false, $part = ['id', 'snippet', 'contentDetails', 'statistics']) {
+        $socialUpdate = $this->handleAccessToken($social);
+
+        if($socialUpdate != null) {
+            $params  = [
+                'id'   => is_array($social->channel_id) ? implode(',', $social->channel_id) : $social->channel_id,
+                'part' => implode(', ', $part),
+            ];
+
+            if($optionalParams) {
+                $params = array_merge($params, $optionalParams);
+            }
+
+            $response = $this->youtube->channels->listChannels('snippet', $params);
+
+            //echo "<pre>"; print_r($response);
+
+            return $response->items[0]['statistics']['viewCount'];
+        }
+    }
+
+    public function getChannelModeratorList($social) {
+        $socialUpdate = $this->handleAccessToken($social);
+
+        if($socialUpdate != null) {
+            try {
+                $broadcastsResponse = $this->youtube->liveBroadcasts->listLiveBroadcasts('id,snippet,contentDetails,status', array('broadcastStatus' => 'active', 'broadcastType' => 'all'));
+
+                //echo "<pre>"; print_r($broadcastsResponse);
+
+                if(isset($broadcastsResponse->items[0]['id'])) {
+                    $liveChatId = $broadcastsResponse->items[0]['snippet']['liveChatId'];
+
+                    $response = $this->youtube->liveChatModerators->listLiveChatModerators($liveChatId, 'id,snippet');
+
+                    //echo "<pre>"; print_r($response);
+
+                    return $response->items;
+                }
+            } catch(Google_Service_Exception $e) {
+                echo sprintf('<p>A service error occurred: <code>%s</code></p>', htmlspecialchars($e->getMessage()));
+            } catch(Google_Exception $e) {
+                echo sprintf('<p>An client error occurred: <code>%s</code></p>', htmlspecialchars($e->getMessage()));
+            }
+        }
+    }
+
+    /*public function getUserChannelVideoById($social, $optionalParams = false, $part = ['id', 'snippet', 'contentDetails']) {
+        $socialUpdate = $this->handleAccessToken($social);
+
+        if($socialUpdate != null) {
+            //$API_URL = 'https://www.googleapis.com/youtube/v3/channels';
+
+            $params  = [
+                        'id'   => is_array($social->channel_id) ? implode(',', $social->channel_id) : $social->channel_id,
+                        'part' => implode(', ', $part),
+                        ];
+
+            if($optionalParams) {
+                $params = array_merge($params, $optionalParams);
+            }
+
+            $broadcastsResponse = $this->youtube->liveBroadcasts->listLiveBroadcasts('id,snippet,contentDetails,status', array('broadcastStatus' => 'active', 'broadcastType' => 'all'));
+
+            echo "<pre>"; print_r($broadcastsResponse);
+
+            //$this->youtube = new \Google_Service_YouTube($this->client);
+
+            //$channels = $this->youtube->channels->listChannels("snippet", $params);
+
+            //echo "<pre>"; print_r($channels);
+
+            //$streamsResponse = $this->youtube->liveStreams->listLiveStreams('id,snippet,status', array('mine' => 'true'));
+
+            //echo "<pre>"; print_r($streamsResponse);
+
+            //$response = $this->youtube->channelSections->listChannelSections($part, $params);
+
+            //echo "<pre>"; print_r($response);
+
+            //var_dump($response); die;
+
+            die;
+
+            if(is_array($social->channel_id)) {
+                return $this->decodeMultiple($apiData);
+            }
+
+            return $this->decodeSingle($apiData);
+        }
+    }*/
 
     /**
      * Handle the Access token.
@@ -366,7 +464,7 @@ class Youtube implements YoutubeContract
      * @return mixed
      * @throws \Exception
      */
-    public function api_get($url, $params)
+    public function api_get($params)
     {
         $this->youtube = new \Google_Service_YouTube($this->client);
 
