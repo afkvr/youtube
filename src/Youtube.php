@@ -319,9 +319,9 @@ class Youtube implements YoutubeContract
                     return 0;
                 }
             } catch(Google_Service_Exception $e) {
-                echo sprintf('<p>A service error occurred: <code>%s</code></p>', htmlspecialchars($e->getMessage()));
+                Log::info($e->getMessage());
             } catch(Google_Exception $e) {
-                echo sprintf('<p>An client error occurred: <code>%s</code></p>', htmlspecialchars($e->getMessage()));
+                Log::info($e->getMessage());
             }
         }
     }
@@ -431,14 +431,19 @@ class Youtube implements YoutubeContract
         }
 
         if($this->client->isAccessTokenExpired()) {
+
             $this->client->refreshToken($refreshAccessToken);
             $response = $this->client->getAccessToken();
-
             $results = json_decode($response, true);
 
             return SocialAccount::updateAccessToken($social, $results);
         } else {
-            $this->client->setAccessToken($accessToken);
+            $token = array(
+                'access_token' => $accessToken,
+                'refresh_token' => $refreshAccessToken);
+
+            $json_token = json_encode($token);
+            $this->client->setAccessToken($json_token);
 
             return $social;
         }
