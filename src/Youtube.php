@@ -373,6 +373,12 @@ class Youtube implements YoutubeContract
         }
     }
 
+	public function listSubscriptions($social, $part, $params){
+        $socialUpdate = $this->handleAccessToken($social);
+		$data = $this->youtube->subscriptions->listSubscriptions($part, $params);
+		return $data;
+	}
+
     /*public function getUserChannelVideoById($social, $optionalParams = false, $part = ['id', 'snippet', 'contentDetails']) {
         $socialUpdate = $this->handleAccessToken($social);
 
