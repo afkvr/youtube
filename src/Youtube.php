@@ -375,8 +375,30 @@ class Youtube implements YoutubeContract
 
 	public function listSubscriptions($social, $part, $params){
         $socialUpdate = $this->handleAccessToken($social);
-		$data = $this->youtube->subscriptions->listSubscriptions($part, $params);
-		return $data;
+		try {
+			$data = $this->youtube->subscriptions->listSubscriptions($part, $params);
+			return $data;
+        } catch (\Google_Service_Exception $e) {
+            //die($e->getMessage());
+			return false;
+        } catch (\Google_Exception $e) {
+            //die($e->getMessage());
+			return false;
+        }
+	}
+
+	public function listSponsors($social, $part, $params){
+        $socialUpdate = $this->handleAccessToken($social);
+		try {
+			$data = $this->youtube->sponsors->listSponsors($part, $params);
+			return $data;
+        } catch (\Google_Service_Exception $e) {
+            //die($e->getMessage());
+			return false;
+        } catch (\Google_Exception $e) {
+            //die($e->getMessage());
+			return false;
+        }
 	}
 
     /*public function getUserChannelVideoById($social, $optionalParams = false, $part = ['id', 'snippet', 'contentDetails']) {
