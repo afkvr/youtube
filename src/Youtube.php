@@ -459,7 +459,8 @@ class Youtube implements YoutubeContract
         $json_token = json_encode($token);
         $this->client->setAccessToken($json_token);
         Log::info('token' . $this->client->isAccessTokenExpired());
-        if($this->client->isAccessTokenExpired()) {
+        $token_expire = Carbon::instance(new \DateTime($social->expire_in));
+        if(Carbon::now() >= $token_expire) {
 
             $this->client->refreshToken($refreshAccessToken);
             $response = $this->client->getAccessToken();
