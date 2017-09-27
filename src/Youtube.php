@@ -425,10 +425,12 @@ class Youtube implements YoutubeContract
     {
         $accessToken = $social->access_token;
         $refreshAccessToken = $social->refresh_token;
+        $token = array(
+            'access_token' => $accessToken,
+            'refresh_token' => $refreshAccessToken);
 
-        if(is_null($accessToken)) {
-            throw new \Exception('An access token is required.');
-        }
+        $json_token = json_encode($token);
+        $this->client->setAccessToken($json_token);
 
         if($this->client->isAccessTokenExpired()) {
 
