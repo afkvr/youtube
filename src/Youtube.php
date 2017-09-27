@@ -454,12 +454,11 @@ class Youtube implements YoutubeContract
         $accessToken = $social->access_token;
         $refreshAccessToken = $social->refresh_token;
         $token = array(
-            'access_token' => $accessToken,
-            'refresh_token' => $refreshAccessToken);
+            'access_token' => $accessToken);
 
         $json_token = json_encode($token);
-        $this->client->setAccessToken($accessToken);
-
+        $this->client->setAccessToken($json_token);
+        Log::info('token' . $this->client->isAccessTokenExpired());
         if($this->client->isAccessTokenExpired()) {
 
             $this->client->refreshToken($refreshAccessToken);
@@ -469,11 +468,10 @@ class Youtube implements YoutubeContract
             return SocialAccount::updateAccessToken($social, $results);
         } else {
             $token = array(
-                'access_token' => $accessToken,
-                'refresh_token' => $refreshAccessToken);
+                'access_token' => $accessToken);
 
             $json_token = json_encode($token);
-            $this->client->setAccessToken($accessToken);
+            $this->client->setAccessToken($json_token);
 
             return $social;
         }
