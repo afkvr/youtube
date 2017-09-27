@@ -464,7 +464,7 @@ class Youtube implements YoutubeContract
             return SocialAccount::updateAccessToken($social, $results);
         } else {
             $token = array(
-                'access_token' => $accessToken);
+                'access_token' => $accessToken,'refresh_token'=>$refreshAccessToken);
 
             $json_token = json_encode($token);
             $this->client->setAccessToken($json_token);
