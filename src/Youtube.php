@@ -458,7 +458,7 @@ class Youtube implements YoutubeContract
             'refresh_token' => $refreshAccessToken);
 
         $json_token = json_encode($token);
-        $this->client->setAccessToken($json_token);
+        $this->client->setAccessToken($accessToken);
 
         if($this->client->isAccessTokenExpired()) {
 
@@ -473,7 +473,7 @@ class Youtube implements YoutubeContract
                 'refresh_token' => $refreshAccessToken);
 
             $json_token = json_encode($token);
-            $this->client->setAccessToken($json_token);
+            $this->client->setAccessToken($accessToken);
 
             return $social;
         }
