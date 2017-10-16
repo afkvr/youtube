@@ -474,6 +474,7 @@ class Youtube implements YoutubeContract
     }
 
     public function initAccessToken($social){
+        Log::info("Init youtube lib 2017-10-16");
         $this->handle_access_token = true;
         $accessToken = $social->access_token;
         $refreshAccessToken = $social->refresh_token;
