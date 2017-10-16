@@ -21,6 +21,8 @@ class Youtube implements YoutubeContract
 
     private $thumbnailUrl;
 
+    private $handle_access_token;
+
     /**
      * Constructor accepts the Google Client object, whilst setting the configuration options.
      *
@@ -39,6 +41,7 @@ class Youtube implements YoutubeContract
         $this->client->setRedirectUri(config('youtube.routes.redirect_uri'));
 
         $this->youtube = new \Google_Service_YouTube($this->client);
+        $this->handle_access_token = false;
     }
 
     public function saveAccessTokenToDB($accessToken) {
@@ -451,26 +454,35 @@ class Youtube implements YoutubeContract
      */
     private function handleAccessToken($social)
     {
-        $accessToken = $social->access_token;
-        $refreshAccessToken = $social->refresh_token;
-        Log::info('token' . $this->client->isAccessTokenExpired());
-        $token_expire = Carbon::instance(new \DateTime($social->expire_in));
-        if(Carbon::now() >= $token_expire) {
-
-            $this->client->refreshToken($refreshAccessToken);
-            $response = $this->client->getAccessToken();
-            $results = json_decode($response, true);
-
-            return SocialAccount::updateAccessToken($social, $results);
-        } else {
+        if (!$this->handle_access_token){
+            $this->handle_access_token = true;
+            $accessToken = $social->access_token;
+            $refreshAccessToken = $social->refresh_token;
             $token = array(
                 'access_token' => $accessToken,'refresh_token'=>$refreshAccessToken);
-
             $json_token = json_encode($token);
             $this->client->setAccessToken($json_token);
-
+            Log::info($this->client->getAccessToken());
+            $this->client->refreshToken($refreshAccessToken);
+            $response = $this->client->getAccessToken();
+            Log::info($response);
             return $social;
         }
+        else{
+            return $social;
+        }
+    }
+
+    public function initAccessToken($social){
+        $this->handle_access_token = true;
+        $accessToken = $social->access_token;
+        $refreshAccessToken = $social->refresh_token;
+        $token = array(
+            'access_token' => $accessToken,'refresh_token'=>$refreshAccessToken);
+        $json_token = json_encode($token);
+        $this->client->setAccessToken($json_token);
+        $this->client->refreshToken($refreshAccessToken);
+        return true;
     }
 
     /**
